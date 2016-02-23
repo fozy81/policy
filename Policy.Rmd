@@ -1,0 +1,262 @@
+---
+title: "Litter Reduction Act `r format(Sys.Date(),'%Y')`"
+author: "Policy Administrators"
+date: "22 November 2015"
+output:
+  pdf_document:
+    fig_caption: yes
+    fig_height: 4
+    fig_width: 4
+    number_sections: yes
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    theme: readable
+params:
+  admin_area: North Lanarkshire
+---
+
+# Policy Statement
+
+**Reduce street litter by `r reduction_target <- 75``r reduction_target`%.**
+
+# Administrative area `r admin_area <- params$admin_area``r admin_area_html <- gsub(pattern=" ","%20",admin_area)`
+
+```{r, echo=FALSE, message=FALSE,fig.cap= paste("The policy applies the administrative area of ",admin_area,sep=""),cache=TRUE} 
+# create map of admin area
+library(osmar)
+library(RCurl)
+library(jsonlite)
+# query to openstreetmap 'overpass' api
+
+#url <-  'http://nominatim.openstreetmap.org/search/North%20Lanarkshire?format=json'
+
+#query_response <- getURL(url)
+#dq <- fromJSON(query_response)
+
+url <- paste('http://overpass-api.de/api/interpreter?data=%3C!--%0AThis%20query%20looks%20for%20nodes%2C%20ways%20or%20relations%20%0Awith%20the%20given%20key%2Fvalue%20combination.%0AChoose%20your%20region%20and%20hit%20the%20Run%20button%20above!%0A--%3E%0A%0A%3Cosm-script%20output%3D%22xml%22%3E%0A%20%20%0A%20%20%3Cquery%20type%3D%22relation%22%3E%0A%20%20%20%20%3Chas-kv%20k%3D%22name%22%20v%3D%22',admin_area_html,'%22%2F%3E%0A%20%20%3C%2Fquery%3E%0A%20%20%0A%20%20%3Cprint%20mode%3D%22body%22%2F%3E%0A%20%20%3Crecurse%20type%3D%22down%22%2F%3E%0A%20%20%3Cprint%20mode%3D%22meta%22%2F%3E%0A%3C%2Fosm-script%3E%0A&target=xml',sep="")
+    
+# url <- "https://www.openstreetmap.org/relation/1920584"
+ #url <-  "http://nominatim.openstreetmap.org/search?q=North%20Lanarkshire&format=json&polygon=1"
+map_data <- getURL(url)
+write(map_data,file="map_data.osm")
+# use osmar library to load data and plot map
+osm_map <-  get_osm(complete_file(), source = osmsource_file("map_data.osm"))
+plot(osm_map)
+
+```
+
+#  Litter 
+ 
+## Meaning of litter
+
+(a) Rubbish such as paper, tins, and bottles left lying in an open or public place.
+
+```{r, echo=FALSE,results='asis'} 
+library(pander)
+litter_cat <- data.frame("category"= c(1,2,3,4,5),
+                         "name"= c("Dangerous",
+                                   "Harmful",
+                                   "Severe",
+                                   "Nuisance",
+                                   "Minor"),
+                   "description"=c("Harmful litter which threatens human life",
+                                    "Harmful litter which could severely injury human health",
+                                    "Litter posing moderate risk to human health",
+                                    "Litter posing minor risk to human health",
+                                    "Litter posing minimal or no risk to human health"),
+                                    reduction_target)
+
+#knitr::kable(litter_cat, align='c')
+set.caption("This table defines the categories of social impact of litter")
+pandoc.table(litter_cat)
+
+```
+
+# Public highways
+
+Publicly accessible streets excluding gated or no access highways. `r exclude_access <- c('access=no|private|destination')` The street area covers the entire width of the thorough fare up until meeting with private or fenced property. Including the road verge or sidewalk.
+
+
+
+```{r, echo=FALSE, message=FALSE,fig.cap="Map of streets", cache=TRUE} 
+# create map of admin area
+library(osmar)
+library(RCurl)
+# query to openstreetmap 'overpass' api
+url <- readLines("road_query")
+# admin_area_html <- "Falkirk%20Council"
+url <- gsub(pattern = "Falkirk%20Council", url, replacement = admin_area_html)
+
+    
+road_data <- getURL(url)
+write(road_data,file="road_data.osm")
+# use osmar library to load data and plot map
+road_map <-  get_osm(complete_file(), source = osmsource_file("road_data.osm"))
+plot(road_map)
+
+```
+
+# Reduction
+
+The reduction target of `r reduction_target`% is based on a snapshot of highways within the admin area of `r admin_area`  
+taken at the start of a four year programme. The snapshot survey will be recorded again each year at approximately the same time of year.
+
+The aim is to meet the reduction of `r reduction_target`% over the course of `r target_time <- 4``r target_time` years based on the original base line. The reduction target applies equally over all `r length(litter_cat)` categories of litter.   
+
+
+# Snapshot survey
+
+The snapshot will select `r sub_sample <- 5``r sub_sample`% of the `r highway_network <- paste('highway in (\'primary\',\'secondary\',\'tertiary\',\'residential\',\'unclassified\') and access not = \'no\', \'private\', \'destination\'',sep="")` highway network as defined in OpenStreetMap as `r highway_network`
+
+Each 2km section of randomly selected highway will be selected. Each section split into 100m sub-sections. The survey will assess each 100m section, taking photos and identifying the amount of each category of litter found.
+
+```{r, echo=FALSE,results='asis'}
+litter_questions <- data.frame(
+'question'=c('Unique id of section',
+             'Date',
+             'Sampler ID',
+             litter_cat[1,2],
+             'Amount'),
+'answers'=c('1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20',
+            'Date',
+            'Text',
+            litter_cat[1,2],
+            'huge amount of litter,large amount of litter,moderate amount of litter,minor amount of litter,no litter'
+            ))
+
+#knitr::kable(litter_questions)
+
+set.caption("Snapshot litter survey questions")
+#knitr::kable(social_questions, align = 'c')
+pandoc.table(litter_questions)
+
+```
+
+`r percent_road <- 5` `r percent_road`% of highway network 1km sections randomly selected highlighted in black
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE, fig.cap= "Litter Survey Points"}
+library(osmar)
+library(RCurl)
+library(sp)
+library(rgeos)
+library(spatialEco)
+library(rgdal)
+road_line <- as_sp(road_map, "lines")
+road_line_merge <-  gLineMerge(road_line)
+
+road_line_merge <- spTransform(road_line_merge,CRS("+proj=utm"))
+road_line <- spTransform(road_line,CRS("+proj=utm"))
+
+road_length <- gLength(road_line_merge) / 1000
+num_surveys <- round(road_length * as.numeric(paste("0.0",percent_road,sep="")),digits=0)
+#sample.grid <- makegrid(road_line_merge, cellsize=1000,
+#	pretty = TRUE)
+roads <- spsample(road_line_merge , n = 2000, "stratified")
+
+#plot(sample.grid)
+plot(road_line)
+plot(sample(roads,num_surveys), pch =15,cex= 1.5, col="black" ,add=T,box=T,title="2km points")
+
+```
+
+# Social survey
+
+The a survey of 500 people will record social attitudes to litter via webiste questionaire
+
+The questions will be:
+
+```{r, echo=FALSE}
+social_questions <- data.frame(
+'question'=c('How old are you?',
+             'Which postal area to you live in?',
+             'Do you drop litter?',
+             'In the last week have you dropped litter?',
+             'Does litter concern you?',
+             'How much litter have you seen in the last week?',
+             'Would you be interested to participant in litter picking?',
+             'How many times per year who you participant?'),
+'answers'=c('< 16,16-20,20-30,30-45,45-65,>65',
+            'text',
+            'yes,no',
+            'yes,no',
+            'very high concern,high concern,moderate concern,low concern,not concerned',
+            'huge amount of litter,large amount of litter,moderate amount of litter,minor amount of litter,no litter',
+            'yes,no',
+            'numeric'))
+```
+
+
+```{r, echo=FALSE, results="asis" }
+library(pander)
+#knitr::kable(social_questions, align = 'c')
+set.caption("Social attitude questionaire")
+pandoc.table(social_questions, split.cells = c(30,30,30,30,30,30,30,30),style="multiline")
+
+``` 
+
+
+# Policy tools
+
+## Fines
+
+```{r, echo=FALSE, results="asis"}
+
+fine_cat <- data.frame('fine_categories'=c(100,200,400,800,1600))
+categories <- cbind(litter_cat,fine_cat)
+set.caption("Increased Litter Fine Categories")
+pandoc.table(categories,split.cells = 30,style="multiline")
+
+```
+
+## Street cleaning budget
+
+## Number of public rubbish bins
+
+## Budget for education
+
+## Buget for re-education
+
+## Community litter action
+
+## Private sector action
+
+Example data:
+
+```{r, echo=FALSE, warning=FALSE,results='asis'}
+library()
+example_results <- data.frame("year"=c(seq(2015,2019,1)),"percentage_drop"=c(0,10,20,30,75))
+save(example_results,file="example_results.rdata")
+pandoc.table(example_results)
+
+
+get_result <- function(year){
+  
+ result <- example_results
+  result <- result$percentage_drop[result$year == year]
+  return(result)
+}
+
+save(get_result,file="get_result.R")
+
+#policy::get_result(2016)
+
+```
+
+
+```{r, echo=FALSE}
+#save.image(file="image.RData")
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
