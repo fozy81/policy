@@ -211,6 +211,9 @@ pandoc.table(categories,split.cells = 30,style="multiline")
 
 ## Street cleaning budget
 
+* Annual Budget
+* Employees
+
 ## Number of public rubbish bins
 
 ## Budget for education
